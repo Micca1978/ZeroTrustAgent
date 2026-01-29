@@ -1,0 +1,20 @@
+version: '3.8'
+
+services:
+  ZeroTrustAgent:
+    image: micca1978/zerotrustagent:latest
+    volumes:
+      - ./data:/app/data
+    environment:
+      - NODE_ENV=production
+      - DB_URL=mongodb://mongo:27017/zerotrust
+      - API_KEY=your_api_key_here
+    ports:
+      - "8080:8080"
+      
+database:
+  image: mongo:latest
+  volumes:
+    - ./data:/data/db
+  ports:
+    - "27017:27017"
