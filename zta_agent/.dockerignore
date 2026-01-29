@@ -1,0 +1,15 @@
+# Exclude node_modules
+node_modules/
+
+# Exclude build artifacts
+build/
+
+# Exclude log files
+*.log
+
+# Exclude environment variable files
+.env
+
+# Exclude other unnecessary files
+.DS_Store
+Thumbs.db
