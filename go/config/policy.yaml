@@ -1,0 +1,107 @@
+# Zero Trust Agent Configuration (Go)
+# This file configures authentication, policies, and monitoring
+
+auth:
+  jwt_secret: ${ZTA_JWT_SECRET:-default-dev-secret-change-in-production}
+  token_expiration: 1h
+  refresh_expiration: 24h
+  max_failed_attempts: 5
+  lockout_duration: 15m
+  providers:
+    - password
+    - oauth
+
+  oauth:
+    google:
+      client_id: ${ZTA_GOOGLE_CLIENT_ID}
+      client_secret: ${ZTA_GOOGLE_CLIENT_SECRET}
+      redirect_uri: ${ZTA_GOOGLE_REDIRECT_URI:-http://localhost:8080/oauth2callback}
+      scope: ${ZTA_GOOGLE_SCOPE:-openid email profile}
+    github:
+      client_id: ${ZTA_GITHUB_CLIENT_ID}
+      client_secret: ${ZTA_GITHUB_CLIENT_SECRET}
+      redirect_uri: ${ZTA_GITHUB_REDIRECT_URI:-http://localhost:8080/auth/github/callback}
+      scope: ${ZTA_GITHUB_SCOPE:-read:user user:email}
+    entra:
+      client_id: ${ZTA_ENTRA_CLIENT_ID}
+      client_secret: ${ZTA_ENTRA_CLIENT_SECRET}
+      tenant_id: ${ZTA_ENTRA_TENANT_ID}
+      redirect_uri: ${ZTA_ENTRA_REDIRECT_URI:-http://localhost:8080/auth/entra/callback}
+      scope: ${ZTA_ENTRA_SCOPE:-openid email profile User.Read}
+
+policies:
+  - id: allow-authenticated-read
+    name: Allow Authenticated Read Operations
+    description: Allow read operations for authenticated users
+    priority: 100
+    conditions:
+      - field: action
+        operator: in
+        value: [read, list, get, view]
+    effect: allow
+
+  - id: allow-authenticated-write
+    name: Allow Authenticated Write Operations
+    description: Allow write operations with auditing
+    priority: 90
+    conditions:
+      - field: action
+        operator: in
+        value: [write, create, update]
+    effect: allow
+    actions:
+      - audit
+
+  - id: deny-admin-operations
+    name: Deny Admin Operations
+    description: Deny admin operations unless explicitly allowed
+    priority: 80
+    conditions:
+      - field: action
+        operator: regex
+        value: "^admin.*"
+    effect: deny
+
+  - id: deny-sensitive-resources
+    name: Deny Access to Sensitive Resources
+    description: Block access to sensitive paths
+    priority: 70
+    conditions:
+      - field: resource
+        operator: regex
+        value: ".*/(secrets|credentials|keys)/.*"
+    effect: deny
+
+  - id: rate-limit-api
+    name: Rate Limit API Access
+    description: Apply rate limiting to API endpoints
+    priority: 60
+    conditions:
+      - field: resource
+        operator: starts_with
+        value: /api/
+    effect: allow
+    actions:
+      - rate_limit
+
+  - id: default-deny
+    name: Default Deny
+    description: Deny all requests that don't match any policy
+    priority: 0
+    conditions: []
+    effect: deny
+
+monitoring:
+  enabled: true
+  rate_limit_window: 1m
+  rate_limit_max: 100
+  alert_threshold: 10
+  geoip_enabled: false
+
+logging:
+  level: info
+  format: json
+  output_path: logs/zta-agent.log
+  max_size: 100
+  max_backups: 3
+  max_age: 30
