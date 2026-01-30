@@ -62,3 +62,7 @@ Thumbs.db
 
 # PyInstaller files
 *.spec
+
+# Go build artifacts
+go/bin/
+*.exe
